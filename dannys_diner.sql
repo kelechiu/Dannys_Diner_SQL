@@ -193,7 +193,63 @@ WITH date_cte AS
   GROUP BY s.customer_id, d.join_date, d.valid_date;
 
 
+ -- Bonus question 1-- Table recreation
+  WITH member_cte AS 
+  (
+    SELECT s.customer_id, s.order_date, m.product_name, m.price, mb.join_date,
+      CASE 
+        WHEN s.order_date < mb.join_date THEN 'N'
+        WHEN s.order_date >= mb.join_date THEN 'Y'
+        ELSE 'N'
+        END AS Member
+    FROM dbo.members mb
+    RIGHT JOIN dbo.sales s ON mb.customer_id = s.customer_id
+    JOIN dbo.menu m ON s.product_id = m.product_id
+    
+  )
+
+SELECT 
+  member_cte.customer_id,
+  member_cte.order_date,
+  member_cte.product_name,
+  member_cte.price,
+  member_cte.Member
+FROM 
+member_cte;
+
+-- Other solution--Table recreation
+SELECT s.customer_id, s.order_date, m.product_name, m.price, 
+  CASE
+    WHEN order_date < join_date THEN 'N'
+    WHEN order_date >= join_date THEN 'Y'
+    ELSE 'N'
+    END AS member
+FROM members mb
+RIGHT JOIN sales s ON mb.customer_id = s.customer_id
+JOIN menu m ON s.product_id = m.product_id;
 
 
+-- Bonus question 2--create additional rank column
+
+WITH member_cte AS
+(
+  SELECT s.customer_id, s.order_date, m.product_name, m.price, 
+    CASE 
+      WHEN s.order_date < mb.join_date THEN 'N'
+      WHEN s.order_date >= mb.join_date THEN 'Y'
+      ELSE 'N'
+      END AS member
+  FROM
+  members mb 
+  RIGHT JOIN sales s ON mb.customer_id = s.customer_id
+  JOIN menu m ON s.product_id = m.product_id
+)
+
+SELECT *,
+CASE 
+  WHEN member = 'N' THEN NULL
+  ELSE DENSE_RANK() OVER (PARTITION BY customer_id,member ORDER BY order_date)
+  END AS ranking
+FROM member_cte;
 
 
